@@ -8,6 +8,9 @@ set -e
 # Install voxtype and configure it for use.
 
 if gum confirm "Install Voxtype + AI model (~150MB) to enable dictation?"; then
+  # The AUR voxtype package conflicts with voxtype-bin. Drop it first so
+  # pacman --noconfirm does not refuse the new install.
+  omarchy-pkg-present voxtype && omarchy-pkg-drop voxtype
   omarchy-pkg-add wtype voxtype-bin
 
   # Setup voxtype

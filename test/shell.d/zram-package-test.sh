@@ -81,6 +81,11 @@ run_migration() {
   : >"$calls"
   rm -f "$swap_active"
   PATH="$stub_bin:$PATH" TEST_LOG="$calls" TEST_SWAP_ACTIVE="$swap_active" \
+    OMARCHY_PATH="$ROOT" \
+    OMARCHY_ZRAM_CONF="$test_tmp/absent-zram.conf" \
+    OMARCHY_ZRAM_DROPIN_USR="$test_tmp/absent-usr.conf" \
+    OMARCHY_ZRAM_DROPIN_ETC="$test_tmp/etc/90-omarchy.conf" \
+    OMARCHY_ZRAM_SHIPPED="$ROOT/default/systemd/zram-generator.conf.d/90-omarchy.conf" \
     OMARCHY_TEST_ZRAM_MISSING="$1" OMARCHY_TEST_APPLE_SILICON="${2:-1}" \
     bash -euo pipefail "$migration" >/dev/null
 }
@@ -95,6 +100,8 @@ grep -Fx 'systemctl daemon-reload' "$calls" >/dev/null ||
 grep -Fx 'systemctl start systemd-zram-setup@zram0.service' "$calls" >/dev/null ||
   fail "the zram migration starts the configured zram device"
 assert_systemd_start_follows_reload
+[[ -f $test_tmp/etc/90-omarchy.conf ]] ||
+  fail "the zram migration copies the shipped drop-in when nothing configures zram"
 pass "the zram migration repairs an existing install without zram-generator"
 
 run_migration 0
@@ -115,6 +122,10 @@ run_user_migrations() {
 
   HOME="$home" OMARCHY_PATH="$test_root" PATH="$stub_bin:$PATH" \
     TEST_LOG="$calls" TEST_SWAP_ACTIVE="$swap_active" \
+    OMARCHY_ZRAM_CONF="$test_tmp/absent-zram.conf" \
+    OMARCHY_ZRAM_DROPIN_USR="$test_tmp/absent-usr.conf" \
+    OMARCHY_ZRAM_DROPIN_ETC="$test_tmp/etc/90-omarchy.conf" \
+    OMARCHY_ZRAM_SHIPPED="$ROOT/default/systemd/zram-generator.conf.d/90-omarchy.conf" \
     OMARCHY_TEST_ZRAM_MISSING="$zram_missing" \
     "$ROOT/bin/omarchy-migrate" >/dev/null
 }
