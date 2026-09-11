@@ -59,3 +59,8 @@ with tempfile.TemporaryDirectory() as tmp:
     assert (tmp / 'region').read_text() == '800x600+10+20\n'
 print('ok - Apple webcam selects the older OpenGL renderer; other platforms preserve mpv defaults')
 PY
+
+overlay="$ROOT/default/hypr/apps/webcam-overlay.lua"
+grep -Fq 'no_focus = true' "$overlay" || fail "the webcam overlay does not steal focus"
+grep -Fq 'no_follow_mouse = true' "$overlay" || fail "the webcam overlay does not follow the mouse"
+pass "the webcam overlay stays pinned without taking focus"
