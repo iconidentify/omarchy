@@ -11,6 +11,7 @@ run_logged "$OMARCHY_INSTALL/user/hardware/dell/xps13-text-scaling.sh"
 run_logged "$OMARCHY_INSTALL/user/hardware/apple/touchpad.sh"
 run_logged "$OMARCHY_INSTALL/user/hardware/apple/mic.sh"
 run_logged "$OMARCHY_INSTALL/user/hardware/apple/electron-gl.sh"
+run_logged "$OMARCHY_INSTALL/user/hardware/apple/share-picker.sh"
 run_logged "$OMARCHY_INSTALL/user/hardware/fix-nouveau-cursor.sh"
 
 run_logged "$OMARCHY_INSTALL/user/default-keyring.sh"
