@@ -27,3 +27,16 @@ assert(devices["apple-mtp-multi-touch"].tap_to_click == true, "MTP user override
 assert(devices["apple-spi-trackpad"].tap_to_click == true, "SPI user override wins")
 LUA
 pass "Apple-only touchpad default and documented user override"
+
+default_input="$ROOT/default/hypr/input.lua"
+user_input="$ROOT/config/hypr/input.lua"
+
+# Apple Silicon applies natural_scroll from a user leaf; x86 stays traditional.
+grep -Fq 'natural_scroll = false,' "$default_input" ||
+  fail "shipped touchpad default uses traditional scrolling"
+pass "shipped touchpad default uses traditional scrolling"
+
+grep -Fq -- '--       natural_scroll = true,' "$user_input" ||
+  fail "user override example documents natural scrolling"
+pass "user override example documents natural scrolling"
+
