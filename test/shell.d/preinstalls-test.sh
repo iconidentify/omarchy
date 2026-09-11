@@ -77,8 +77,18 @@ pass "every preinstall is shipped in omarchy-base.packages"
 if [[ $(uname -m) == "aarch64" ]]; then
   printf '%s\n' "${restored[@]}" | grep -qxF obsidian-appimage ||
     fail "ARM preinstalls restore the installable Obsidian substitute"
+  printf '%s\n' "${restored[@]}" | grep -qxF obsidian &&
+    fail "ARM preinstalls still ask for the x86-only package obsidian"
   pass "ARM preinstalls restore the installable Obsidian substitute"
 fi
+
+OMARCHY_TEST_ARCH=x86_64 "$ROOT/bin/omarchy-install-preinstalls" >/dev/null
+mapfile -t restored_x86 <"$pkg_log"
+printf '%s\n' "${restored_x86[@]}" | grep -qxF obsidian ||
+  fail "x86 preinstalls restore obsidian by its extra/AUR name"
+printf '%s\n' "${restored_x86[@]}" | grep -qxF obsidian-appimage &&
+  fail "x86 preinstalls do not ask for the ARM Obsidian substitute"
+pass "x86 preinstalls keep the extra/AUR Obsidian package name"
 
 for package in omacut omacalc omawrite; do
   printf '%s\n' "${restored[@]}" | grep -qxF "$package" ||

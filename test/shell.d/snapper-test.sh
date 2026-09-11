@@ -62,6 +62,14 @@ grep -F 'systemctl cat limine-snapper-sync.service' "$ROOT/install/config/snappe
   fail "config phase must not skip Snapper on Apple Silicon"
 pass "snapshot configure is defensive and runs on Apple Silicon"
 
+snapper_migration=$(grep -rl 'Repair missing Snapper root setup on Apple Silicon' "$ROOT/migrations" | head -n 1 || true)
+[[ -n $snapper_migration ]] || fail "existing Apple Silicon installs get a Snapper migration"
+grep -F 'install/config/snapper.sh' "$snapper_migration" >/dev/null
+grep -F 'omarchy-hw-apple-silicon' "$snapper_migration" >/dev/null ||
+  fail "the Snapper repair migration is gated to Apple Silicon"
+grep -F 'stat -f -c %T /' "$snapper_migration" >/dev/null
+pass "existing Apple Silicon installs get a Snapper migration"
+
 setup_system="$ROOT/bin/omarchy-apply-system"
 grep -F 'config/all.sh' "$setup_system" >/dev/null ||
   fail "system setup runs the config phase"

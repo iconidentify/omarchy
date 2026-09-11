@@ -24,11 +24,16 @@ exec /usr/bin/uname "$@"
 SH
 cat >"$stub_bin/omarchy-cmd-missing" <<'SH'
 #!/bin/bash
-[[ ${OBSIDIAN_PRESENT:-0} != 1 ]]
+[[ ${OBSIDIAN_PRESENT:-0} != 1 && ! -e ${OBSIDIAN_INSTALLED:-/nonexistent} ]]
+SH
+cat >"$stub_bin/omarchy-pkg-available" <<'SH'
+#!/bin/bash
+[[ ${REPO_HAS_OBSIDIAN:-1} == 1 ]]
 SH
 cat >"$stub_bin/omarchy-pkg-add" <<'SH'
 #!/bin/bash
 printf 'pkg-add %s\n' "$*" >>"$TEST_LOG"
+touch "$OBSIDIAN_INSTALLED"
 SH
 cat >"$stub_bin/omarchy-pkg-aur-add" <<'SH'
 #!/bin/bash
@@ -38,7 +43,9 @@ chmod +x "$stub_bin"/*
 
 run_leaf() {
   : >"$calls"
-  TEST_ARCH="${1:-x86_64}" OBSIDIAN_PRESENT="${2:-0}" TEST_LOG="$calls" \
+  rm -f "$test_tmp/installed"
+  TEST_ARCH="${1:-x86_64}" OBSIDIAN_PRESENT="${2:-0}" REPO_HAS_OBSIDIAN="${3:-1}" \
+    TEST_LOG="$calls" OBSIDIAN_INSTALLED="$test_tmp/installed" \
     PATH="$stub_bin:$PATH" bash -c 'source "$1"' _ "$leaf"
 }
 
@@ -53,4 +60,12 @@ pass "aarch64 skips Obsidian when the command is already present"
 run_leaf aarch64 0
 grep -Fxq 'pkg-add obsidian-appimage' "$calls" ||
   fail "aarch64 asks the repos for obsidian-appimage" "$(cat "$calls")"
+! grep -q aur-add "$calls" || fail "a repo install does not also build from the AUR" "$(cat "$calls")"
 pass "aarch64 installs Obsidian from the AppImage package"
+
+run_leaf aarch64 0 0
+grep -Fxq 'aur-add obsidian-appimage' "$calls" ||
+  fail "aarch64 falls back to the AUR when the repos lack obsidian-appimage" "$(cat "$calls")"
+! grep -q pkg-add "$calls" ||
+  fail "aarch64 does not call pkg-add when the repos lack the package" "$(cat "$calls")"
+pass "aarch64 falls back to the AUR when the repos lack obsidian-appimage"

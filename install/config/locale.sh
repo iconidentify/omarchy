@@ -1,4 +1,3 @@
-
 # Asahi Alarm ships LANG=C and Omarchy Mac has no ISO step to replace it, so a
 # by-hand install runs non-UTF-8: byte-wise sorting, ASCII-only \u escapes, and
 # any tool that reads the locale for its encoding.
