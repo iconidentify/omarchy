@@ -1,4 +1,3 @@
-#!/bin/bash
 # Hardware video decode on Apple Silicon needs two packages that no repository
 # outside omarchy-aarch64 carries.
 #
