@@ -555,6 +555,16 @@ Item {
   readonly property bool vertical: position === "left" || position === "right"
   readonly property int barSize: vertical ? Style.bar.sizeVertical : Style.bar.sizeHorizontal
 
+  // Whether this machine is an Apple Silicon laptop, whose built-in panel may
+  // have a camera notch. Invoke the detector by OMARCHY_PATH so a session
+  // whose PATH does not include bin/ still identifies the hardware.
+  property bool appleSiliconHost: false
+  Process {
+    running: root.omarchyPath !== ""
+    command: [root.omarchyPath + "/bin/omarchy-hw-apple-silicon"]
+    onExited: function(exitCode) { root.appleSiliconHost = exitCode === 0 }
+  }
+
   function normalizePosition(value) {
     return BarModel.normalizePosition(value)
   }
@@ -1261,8 +1271,19 @@ Item {
       right: root.position === "right" || !root.vertical
     }
 
+    // A top bar shorter than the camera cutout of an Apple notched panel
+    // leaves a sliver of every window peeking out beside the camera, so the
+    // cutout height is this panel's minimum sensible top-bar height. An
+    // intentionally taller bar still wins, and a calibrated [bar]
+    // notch-height in shell.toml overrides the derived value.
+    readonly property int notchFloor: root.appleSiliconHost && root.position === "top"
+      ? (Style.bar.notchHeight > 0
+          ? Style.bar.notchHeight
+          : BarModel.notchHeight(screen.name, screen.width, screen.height, screen.devicePixelRatio))
+      : 0
+
     implicitWidth: root.vertical ? root.barSize : 0
-    implicitHeight: root.vertical ? 0 : root.barSize
+    implicitHeight: root.vertical ? 0 : Math.max(root.barSize, notchFloor)
     color: root.transparent ? "transparent" : root.background
     surfaceFormat.opaque: false
     WlrLayershell.namespace: "omarchy-bar"
