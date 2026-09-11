@@ -13,7 +13,9 @@ declare -A LUA_BIND_ARG_MAP
 # via the compiled keymap, with a small fallback for common keys so the menu
 # remains readable if xkbcli cannot resolve a symbol.
 parse_keycodes() {
-  awk '
+  local apple=0
+  omarchy-hw-apple-silicon && apple=1
+  awk -v apple="$apple" '
     BEGIN {
       split("10=1 11=2 12=3 13=4 14=5 15=6 16=7 17=8 18=9 19=0 20=MINUS 21=EQUAL 59=COMMA 60=PERIOD 61=SLASH", fallbacks, " ")
       for (i in fallbacks) {
@@ -59,6 +61,10 @@ parse_keycodes() {
         symbol = mouse_symbol[code]
         if (symbol == "") symbol = "mouse:" code
         sub("mouse:" code, symbol)
+      } else if (apple) {
+        # On Apple Silicon MacBooks XF86MonBrightnessUp/Down ARE F2/F1.
+        gsub(/XF86MonBrightnessUp/, "F2")
+        gsub(/XF86MonBrightnessDown/, "F1")
       }
 
       print
@@ -530,7 +536,7 @@ output_binding_records_uncached() {
 
 keybindings_cache_key() {
   {
-    printf 'v13\n'
+    printf 'v14\n'
     hyprctl devices 2>/dev/null | grep -F 'active keymap:'
     hyprctl binds 2>/dev/null
   } | sha256sum | awk '{ print $1 }'
