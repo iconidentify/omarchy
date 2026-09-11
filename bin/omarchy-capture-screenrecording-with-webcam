@@ -18,4 +18,5 @@ fi
 
 exec omarchy-capture-screenrecording \
   --with-desktop-audio --with-microphone-audio \
-  --with-webcam --webcam-device="$device"
+  --with-webcam --webcam-device="$device" \
+  "$@"
