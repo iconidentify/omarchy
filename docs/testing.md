@@ -117,6 +117,15 @@ Roughly a quarter of the shell test files use this to test parsing, merging,
 and layout logic as pure functions, reserving compositor-gated tests for what
 only a live session can prove.
 
+## Root-only rehearsals
+
+`test/manual/` holds scripts that need root or a scratch block device and so
+cannot run under `./test/shell`. They are run by hand, and every check in them
+is fatal: reaching the end is the pass. `test/manual/snapshot-restore-rehearsal.sh`
+builds a loopback btrfs image with a nested snapper store, restores a snapshot
+through `omarchy-system-snapshot-restore --rehearse`, and checks that the store
+travelled with the restored root. Run it before changing the restore.
+
 ## Conventions worth copying
 
 - **Stub the world, run the real code.** Tests build a scratch `bin/` of stub

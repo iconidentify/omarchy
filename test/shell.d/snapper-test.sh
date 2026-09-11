@@ -106,7 +106,8 @@ find_omarchy_pks_root() {
   return 1
 }
 
-pkgs_root=$(find_omarchy_pks_root) || fail "omarchy-pkgs checkout is available for packaging coverage"
+pkgs_root=$(find_omarchy_pks_root) ||
+  fail "omarchy-pkgs checkout is available for packaging coverage" "set OMARCHY_PKGS_PATH to the omarchy-pkgs checkout"
 settings_pkgbuild="$pkgs_root/omarchy-settings-dev/PKGBUILD"
 omarchy_pkgbuild="$pkgs_root/omarchy-dev/PKGBUILD"
 
@@ -138,7 +139,8 @@ find_omarchy_iso_root() {
   return 1
 }
 
-iso_root=$(find_omarchy_iso_root) || fail "omarchy-iso checkout is available for installer coverage"
+iso_root=$(find_omarchy_iso_root) ||
+  fail "omarchy-iso checkout is available for installer coverage" "set OMARCHY_ISO_PATH to the omarchy-iso checkout"
 configurator="$iso_root/configs/airootfs/root/configurator"
 phases="$iso_root/configs/airootfs/usr/share/omarchy-iso/orchestrator/phases_impl.py"
 manifest="$iso_root/manifests/fresh-4-semantic.json"
