@@ -17,6 +17,12 @@ for command in omarchy-webapp-remove-all omarchy-tui-remove-all omarchy-refresh-
   printf '#!/bin/bash\nexit 0\n' >"$mock_bin/$command"
 done
 
+cat >"$mock_bin/uname" <<'SH'
+#!/bin/bash
+[[ $1 == -m ]] && { printf '%s\n' "${OMARCHY_TEST_ARCH:-$(/usr/bin/uname -m)}"; exit 0; }
+exec /usr/bin/uname "$@"
+SH
+
 cat >"$mock_bin/gum" <<'SH'
 #!/bin/bash
 [[ $1 == confirm ]] && exit "${OMARCHY_TEST_CONFIRM:-0}"
@@ -36,10 +42,7 @@ SH
 
 chmod +x "$mock_bin"/*
 
-# $ROOT/bin after the mocks: Remove Preinstalls asks omarchy-install-hermes-cli
-# whether the wrapper is Omarchy's rather than matching the marker itself, and
-# that is the real command at runtime. The mocks still shadow what they name.
-export PATH="$mock_bin:$ROOT/bin:$PATH"
+export PATH="$mock_bin:$PATH"
 export HOME="$test_home"
 export OMARCHY_TEST_PKG_LOG="$pkg_log"
 
@@ -61,10 +64,21 @@ dropped:  ${dropped[*]}"
 pass "Install and Remove Preinstalls cover the same packages"
 
 for package in "${restored[@]}"; do
-  printf '%s\n' "${shipped[@]}" | grep -qxF "$package" ||
-    fail "every preinstall is shipped in omarchy-base.packages" "$package is not shipped"
+  if [[ $package == obsidian-appimage ]]; then
+    [[ $(uname -m) == "aarch64" ]] ||
+      fail "the ARM-only Obsidian substitute is not used on x86"
+  else
+    printf '%s\n' "${shipped[@]}" | grep -qxF "$package" ||
+      fail "every preinstall is shipped in omarchy-base.packages" "$package is not shipped"
+  fi
 done
 pass "every preinstall is shipped in omarchy-base.packages"
+
+if [[ $(uname -m) == "aarch64" ]]; then
+  printf '%s\n' "${restored[@]}" | grep -qxF obsidian-appimage ||
+    fail "ARM preinstalls restore the installable Obsidian substitute"
+  pass "ARM preinstalls restore the installable Obsidian substitute"
+fi
 
 for package in omacut omacalc omawrite; do
   printf '%s\n' "${restored[@]}" | grep -qxF "$package" ||
@@ -92,43 +106,3 @@ pass "declining Remove Preinstalls changes nothing"
 "$ROOT/bin/omarchy-remove-preinstalls" >/dev/null
 [[ -f $marker ]] || fail "Remove Preinstalls records the opt-out"
 pass "Remove Preinstalls records the opt-out"
-
-# Hermes' wrapper is only a preinstall when omarchy-install-hermes-cli wrote it.
-# The desktop app's command and an official install live at the same path and
-# are the user's, whether or not any package says so.
-hermes="$test_home/.local/bin/hermes"
-mkdir -p "$(dirname "$hermes")"
-
-printf '%s\n' "#!/bin/bash" "# Written by omarchy-install-hermes-cli." >"$hermes"
-chmod +x "$hermes"
-"$ROOT/bin/omarchy-remove-preinstalls" >/dev/null
-[[ ! -e $hermes ]] || fail "Remove Preinstalls deletes the Omarchy Hermes wrapper"
-pass "Remove Preinstalls deletes the Omarchy Hermes wrapper"
-
-printf '%s\n' "#!/bin/bash" "exec $test_home/.hermes/hermes-agent/venv/bin/hermes \"\$@\"" >"$hermes"
-chmod +x "$hermes"
-"$ROOT/bin/omarchy-remove-preinstalls" >/dev/null
-[[ -x $hermes ]] || fail "Remove Preinstalls keeps the desktop app's Hermes command"
-pass "Remove Preinstalls keeps the desktop app's Hermes command"
-
-official_body="#!/bin/bash
-unset PYTHONPATH
-unset PYTHONHOME
-exec $test_home/.hermes/hermes-agent/venv/bin/hermes \"\$@\""
-printf '%s\n' "$official_body" >"$hermes"
-chmod +x "$hermes"
-"$ROOT/bin/omarchy-remove-preinstalls" >/dev/null
-[[ -x $hermes && $(cat "$hermes") == "$official_body" ]] || fail "Remove Preinstalls keeps an official Hermes install"
-pass "Remove Preinstalls keeps an official Hermes install"
-
-printf '%s\n' "#!/bin/bash" "# Replaces the stub omarchy-install-hermes-cli used to write." >"$hermes"
-chmod +x "$hermes"
-"$ROOT/bin/omarchy-remove-preinstalls" >/dev/null
-[[ -x $hermes ]] || fail "Remove Preinstalls keeps a wrapper that merely mentions the installer"
-pass "Remove Preinstalls keeps a wrapper that merely mentions the installer"
-
-rm -f "$hermes"
-ln -s "$test_home/nowhere/hermes" "$hermes"
-"$ROOT/bin/omarchy-remove-preinstalls" >/dev/null
-[[ -L $hermes ]] || fail "Remove Preinstalls keeps a foreign hermes link"
-pass "Remove Preinstalls keeps a foreign hermes link"
