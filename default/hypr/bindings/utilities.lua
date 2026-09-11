@@ -42,6 +42,15 @@ o.bind("switch:off:Apple SMC power/lid events", nil, "omarchy-hyprland-monitor-c
 
 o.bind("PRINT", "Screenshot", "omarchy-capture-screenshot")
 o.bind("ALT + PRINT", "Screenrecording", "omarchy-capture-screenrecording --stop-recording || omarchy-menu toggle trigger.capture.screenrecord")
+-- Apple keyboards have no PRINT key. SUPER+F10–F12 and the same chords on the
+-- top-row media keysyms cover capture without holding Fn once fnmode=1.
+o.bind("SUPER + F12", "Screenshot Display", "omarchy-capture-screenshot fullscreen")
+o.bind("SUPER + F11", "Screenshot Region", "omarchy-capture-screenshot region")
+o.bind("SUPER + F10", "Screenshot Window", "omarchy-capture-screenshot windows")
+o.bind("SUPER + XF86AudioMute", "Screenshot Window (Apple top row)", "omarchy-capture-screenshot windows")
+o.bind("SUPER + XF86AudioLowerVolume", "Screenshot Region (Apple top row)", "omarchy-capture-screenshot region")
+o.bind("SUPER + XF86AudioRaiseVolume", "Screenshot Display (Apple top row)", "omarchy-capture-screenshot fullscreen")
+
 o.bind("SUPER + ALT + code:34", "Make webcam overlay smaller", "omarchy-capture-webcam-resize smaller")
 o.bind("SUPER + ALT + code:35", "Make webcam overlay larger", "omarchy-capture-webcam-resize larger")
 o.bind("SUPER + PRINT", "Color picker", "pkill hyprpicker || hyprpicker -a")
