@@ -275,6 +275,7 @@ run_apple_gl() {
     OMARCHY_DRI_PATH="$dri" \
     OMARCHY_CHROMIUM_BIN=/dev/null/missing \
     OMARCHY_1PASSWORD_BIN=/dev/null/missing \
+    OMARCHY_CURSOR_BIN=/dev/null/missing \
     bash -euo pipefail -c 'source "$ROOT/install/user/hardware/apple/electron-gl.sh"'
 }
 

@@ -36,6 +36,7 @@ Exec=env SPECIAL=yes chromium %U
   env = dict(os.environ, HOME=str(home), OMARCHY_PATH=str(root), PATH=f'{bind}:{root}/bin:' + os.environ['PATH'],
              OMARCHY_ELECTRON_GL_BIND_DIR=str(bind), OMARCHY_CHROMIUM_BIN=str(real),
              OMARCHY_CHROMIUM_DESKTOP=str(vendor), OMARCHY_1PASSWORD_BIN='/absent',
+             OMARCHY_CURSOR_BIN='/absent',
              OMARCHY_DRI_PATH=str(tmp / 'dri'))
   apple = bind / 'omarchy-hw-apple-silicon'
   apple.write_text('#!/bin/bash\nexit 0\n')

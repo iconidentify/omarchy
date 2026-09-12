@@ -6,18 +6,26 @@
 # stops passing --disable-gpu.
 omarchy-hw-apple-silicon || return 0
 
-for app in chromium 1password; do
+for app in chromium 1password cursor; do
   if [[ $app == "chromium" ]]; then
     real=${OMARCHY_CHROMIUM_BIN:-/usr/bin/chromium}
     vendor=${OMARCHY_CHROMIUM_DESKTOP:-/usr/share/applications/chromium.desktop}
-  else
+  elif [[ $app == "1password" ]]; then
     real=${OMARCHY_1PASSWORD_BIN:-/opt/1Password/1password}
     vendor=${OMARCHY_1PASSWORD_DESKTOP:-/usr/share/applications/1password.desktop}
+  else
+    real=${OMARCHY_CURSOR_BIN:-/usr/bin/cursor}
+    vendor=${OMARCHY_CURSOR_DESKTOP:-/usr/share/applications/cursor.desktop}
   fi
   if [[ -x $real ]]; then
     if omarchy-cmd-electron-gl-wrap --check "$app" "$real"; then
       omarchy-cmd-desktop-exec-repair "$HOME/.local/share/applications/$app.desktop" \
         "$vendor" "${OMARCHY_ELECTRON_GL_BIND_DIR:-/usr/local/bin}/$app" "$real" "$app"
+      if [[ $app == cursor ]]; then
+        omarchy-cmd-desktop-exec-repair "$HOME/.local/share/applications/cursor-url-handler.desktop" \
+          /usr/share/applications/cursor-url-handler.desktop \
+          "${OMARCHY_ELECTRON_GL_BIND_DIR:-/usr/local/bin}/cursor" "$real" cursor
+      fi
     else
       status=$?
       if ((status == 3 || status == 4)); then

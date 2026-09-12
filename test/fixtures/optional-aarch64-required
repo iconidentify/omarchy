@@ -8,8 +8,11 @@ install.style.font.iosevka
 install.browser.firefox
 install.service.signal
 install.service.tailscale
+install.service.1password
 install.editor.helix
 install.editor.vim
+install.editor.cursor
+install.ai.dictation
 install.terminal.alacritty
 install.terminal.foot
 install.terminal.kitty
