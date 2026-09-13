@@ -4,8 +4,14 @@ source "$(dirname "${BASH_SOURCE[0]}")/base-test.sh"
 
 require_command lua
 
+# A Lua error after hl.config has printed would otherwise leave a passing line
+# on stdout and a traceback on stderr, so the assertion cannot tell them apart.
+# Report the exit status in the captured output instead. The explicit "-"
+# matters: lua run on a bare non-tty stdin discards the chunk's status and
+# exits 0 even after an error.
 resolved_input() {
-  OMARCHY_PATH="$ROOT" OMARCHY_VCONSOLE="${1-}" lua <<'LUA'
+  local output status=0
+  output=$(OMARCHY_PATH="$ROOT" OMARCHY_VCONSOLE="${1-}" lua - <<'LUA'
 package.path = os.getenv("OMARCHY_PATH") .. "/?.lua;" .. package.path
 
 local vconsole = os.getenv("OMARCHY_VCONSOLE")
@@ -31,12 +37,17 @@ hl = {
     local input = config.input
     print(("[%s] [%s] [%s]"):format(input.kb_layout, input.kb_variant, input.kb_options))
   end,
+  -- input.lua declares per-device touchpad defaults; they are not under test here.
+  device = function() end,
 }
 
 o = { window = function() end }
 
 require("default.hypr.input")
 LUA
+  ) || status=$?
+  printf '%s' "$output"
+  (( status == 0 )) || printf '\n<lua exited %s>' "$status"
 }
 
 assert_input() {
