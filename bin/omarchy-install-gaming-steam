@@ -6,8 +6,16 @@
 set -e
 
 echo "Installing Steam..."
-omarchy-pkg-add steam
+if [[ $(uname -m) == aarch64 ]]; then
+  omarchy-pkg-add steam omarchy-steam-fex
+else
+  omarchy-pkg-add steam
+fi
 omarchy-install-gaming-gpu-lib32
+
+if [[ $(uname -m) == aarch64 ]]; then
+  omarchy-launch-steam --prepare
+fi
 
 echo ""
 echo "Steam will start automatically now. This might take a while..."

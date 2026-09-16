@@ -282,6 +282,8 @@ assertDeepEqual(
   ['install.service.chromium-account', 'install.windows'].sort(),
   'menu never hides an Install row because the software is already there'
 )
+// A row may append a hardware condition after its guard (Steam on Apple Silicon
+// also needs omarchy-steam-fex); the guard itself must still name the row.
 assert(
   ['install.browser.zen', 'install.editor.vscode', 'install.gaming.steam', 'install.development.rust'].every(
     id => defaultById[id].disabled && (!defaultById[id].when || availabilityGuard(defaultById[id].when))
