@@ -114,16 +114,16 @@ Use physical Macs for firmware, graphics, audio, suspend, encrypted boot and rec
 
 Resolve the cross-component questions here, then map implementation to the existing [M+ workstreams](https://app.basecamp.com/5994298/buckets/48646031/card_tables/10263379585). The [card reconciliation](upstream-integration-reference.md#relationship-to-existing-basecamp-cards) preserves the mapping and scope questions, including the duplicate Honeykrisp cards, performance criteria and which additional capabilities are release requirements. Reuse existing discussions and work; agree owners, dependencies and acceptance criteria rather than treating every roadmap card as a release blocker.
 
-The immediate work is to complete the add-on validation and agree the package, installer, kernel and MLX interfaces needed for one reproducible encrypted Asahi candidate, with an explicitly scoped Aurora preview proposal. Ready upstream fixes can continue in parallel.
+The immediate work is to deliver the validated add-on with its matching runtime/settings packages and agree the installer, kernel and MLX interfaces needed for one reproducible encrypted Asahi candidate, with an explicitly scoped Aurora preview proposal. Ready upstream fixes can continue in parallel.
 
 ## Current state and evidence
 
 We have taken two steps:
 
 1. **Distilled the existing fork onto upstream Quattro**, incorporating Marcelo's #9835 with adaptations. Published as `quattro-upstream`, this is a common review starting point for the remaining Apple Silicon changes.
-2. **Extracted and tried the separate `omarchy-mac` add-on.** Automated checks and a limited M2 Max trial covered installation, dev-linking, reboot, suspend/resume, Wi-Fi, playback and microphone recording. The implementation remains on the [candidate branch](https://github.com/omacom/omarchy-mac/tree/integrate/omarchy-mac-package), not merged into `quattro-upstream` or published as a signed tester release.
+2. **Extracted and validated the separate `omarchy-mac` add-on on an M2 Max.** The package refactor is incorporated into the cleaned `quattro-upstream` history. The runtime, settings, add-on and published Steam launcher installed together without ownership conflicts; pending migrations completed. The final package set passed reboot, Wi-Fi, playback and microphone recording/playback. Earlier trials also covered suspend/resume. This is not yet a signed tester release.
 
-The limited trial gives us confidence to pursue the package split as the integration plan; broader installation, upgrade and hardware validation remain ahead. Existing configuration overrides were retained. Additional audio-restart checks, the full ordered migration and reproducible companion runtime/settings artifacts remain to be completed. The [validation record](https://github.com/omacom/omarchy-mac/blob/d3b22f6ed2ab326f529c42f3b36ff22b63431e05/plans/omarchy-mac-package-validation.md) records revisions and limitations; Scott subsequently confirmed the post-dev-link playback and recording checks it still lists as pending.
+The package split is now the implemented integration path. Standalone builds, dependency/ownership checks, scratch upgrade/rollback/retry and the live migration trial are recorded in the [validation report](../plans/omarchy-mac-package-validation.md). Administrator overrides were retained. A WirePlumber restart stall also reproduces with the pre-refactor command; the unsuccessful workaround was excluded. Known automated-test limitations, broader hardware coverage, full installer validation and signed package delivery remain documented separately.
 
 Installer integration remains unverified against this branch. Marcelo's tested runtime/package baseline needs clarification; the desktop/add-on trial provides no evidence of that integration.
 

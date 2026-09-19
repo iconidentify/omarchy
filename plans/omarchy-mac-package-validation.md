@@ -1,21 +1,21 @@
 # omarchy-mac candidate validation
 
-Updated 2026-09-19. The coordinated package trial passed on Scott's M2 Max. The candidate is prepared for review and a separate merge decision; no code was merged into `quattro-upstream`, and no candidate was added to the rolling package feed.
+Updated 2026-09-19. The coordinated package trial passed on Scott's M2 Max. The package candidate passed its physical trial, and the approved history cleanup preserves the tested implementation. No candidate has been added to the rolling package feed.
 
 ## Recorded inputs
 
 | Input | Revision or version |
 | --- | --- |
 | Desktop baseline | `350c46550b99688cdb5224408edd5870de2ca07b` |
-| Shared branch, including the published plan | `efb7ca918dcdb30fd050b8553020aa97e01f1d51` |
-| Final code and all three locally built package sources | `20b8ae0fb6e2593172226f9f8cf0bb79e666d2aa` |
+| Shared branch before history cleanup, including the published plan | `efb7ca918dcdb30fd050b8553020aa97e01f1d51` |
+| Tested code and all three locally built package sources | `20b8ae0fb6e2593172226f9f8cf0bb79e666d2aa` |
 | Add-on recipe and companion verification tooling | `290e4c8a2a848897494db67c6047c5fda62037b8` |
 | Upstream runtime/settings recipes adapted for local candidates | `6d27290193109c07b0134360d382e64790ae5dda` |
 | Installed runtime and settings | `4.0.3.r1.mac.20b8ae0f-1` |
 | Installed add-on | `0.1.0-4` |
 | Published Steam package included in the transaction | `omarchy-steam-fex 1.0.0-1` |
 
-The desktop review branch is `integrate/omarchy-mac-package` in `omacom/omarchy-mac`; packaging is on `feature/omarchy-mac-package` in `omarchy-mac/omarchy-pkgs-aarch64`. Evidence-only commits after the recorded source do not change these built artifacts. The published integration plan and reference are retained verbatim from `efb7ca91`.
+The tested desktop branch is retained as `integrate/omarchy-mac-package` in `omacom/omarchy-mac`. The cleaned publication series is `integrate/quattro-package-clean`; packaging remains on `feature/omarchy-mac-package` in `omarchy-mac/omarchy-pkgs-aarch64`. Evidence-only commits after the recorded source do not change these built artifacts. The shared plan and reference retain the agreed direction from `efb7ca91`, with their current-state paragraphs updated after the completed package trial.
 
 ## What passed
 
@@ -44,7 +44,7 @@ The extracted mapper is byte-identical to `350c4655:bin/omarchy-audio-asahi-mic-
 
 Standalone package tests, CLI checks, focused integration/migration/restart/detector tests and effective NetworkManager/systemd/module-configuration checks pass as a non-root user. Setup coverage includes offline provisioning, first-session activation, multiple users, repeated/interrupted setup, preserved overrides and masks, Wi-Fi failure/excluded-chipset cases, and microphone gain/mute/device choices.
 
-The final normal-environment aggregate (`env -u NO_COLOR -u LC_ALL TERM=xterm-256color ./test/all`) passes CLI and 284 of 286 shell test files. `optional-transactions-drift-test.sh` also fails on unchanged `350c4655`. The other failure, `snapshot-restore-test.sh`, passes an immediate focused rerun; both that test and its implementation are unchanged from the baseline. Its warning text was present in the failed run, consistent with the test's early-exiting `grep -q` pipeline racing under `pipefail`. Earlier candidate aggregate runs passed 285/286 files. The final aggregate is not reported as completely green.
+The pre-cleanup final-code aggregate (`env -u NO_COLOR -u LC_ALL TERM=xterm-256color ./test/all`) passes CLI and 284 of 286 shell test files. `optional-transactions-drift-test.sh` also fails on unchanged `350c4655`. The other failure, `snapshot-restore-test.sh`, passes an immediate focused rerun; both that test and its implementation are unchanged from the baseline. Its warning text was present in the failed run, consistent with the test's early-exiting `grep -q` pipeline racing under `pipefail`. Earlier candidate aggregate runs passed 285/286 files. The final aggregate is not reported as completely green.
 
 The user performed a broader system update during validation. Its mkinitcpio hook failed against an unowned `/etc/mkinitcpio.d/linux-asahi.preset` pointing to missing `/boot/vmlinuz-linux-asahi`; the same error appears on September 2 and 6. GRUB references `/EFI/omarchy/vmlinuz` and `/EFI/omarchy/initramfs.img`, both present and dated August 30. No boot files or presets were changed for this package trial.
 
@@ -60,7 +60,7 @@ Counts use `git diff --numstat 350c4655 20b8ae0f -- bin default install migratio
 
 The earlier 1,334, 1,279 and 1,123 figures describe earlier review states. Package source is counted separately. The upstream desktop PR must exclude `packages/`, plans and collaboration documentation. Keep shared interfaces, package implementation, compatibility changes and packaging separately reviewable. Historical migration bodies and compatibility paths are retained; login starts the enabled service without rerunning setup.
 
-The candidate merge preview against `efb7ca91` is conflict-free. This is a read-only merge preview, not a shared-branch merge or approval to publish packages.
+The earlier candidate merge preview against `efb7ca91` was conflict-free. The subsequently approved history cleanup is described below; package publication remains separate.
 
 ## Durable evidence and recovery
 
@@ -77,4 +77,18 @@ Earlier physical-trial evidence and dev-link return instructions remain under `/
 
 ## Before release promotion
 
-The extraction is reviewable with the baseline audio issue disclosed. Broader M1/M2 hardware coverage, live iwd and BCM4378/BCM4387 recovery, full image provisioning and signed repository selection remain separate qualification work. BCM4388 recovery stays excluded. Aurora requires independently recorded evidence. The package feed, trust configuration and shared code branch have not been changed by this work.
+The extraction is reviewable with the baseline audio issue disclosed. Broader M1/M2 hardware coverage, live iwd and BCM4378/BCM4387 recovery, full image provisioning and signed repository selection remain separate qualification work. BCM4388 recovery stays excluded. Aurora requires independently recorded evidence. The package feed and trust configuration are unchanged. Publishing the cleaned shared history does not deploy packages or switch the running desktop.
+
+## History cleanup after the physical trial
+
+The cleaned series keeps the same upstream/Marcelo base, `2bd767f0e54a9138ada8b0e89b66e5080f2d1e33`. It preserves unrelated desktop commits while folding the package extraction and subsequent corrections into separate interface, package implementation, desktop integration and compatibility-migration commits. The plan and evidence are consolidated into one documentation commit. Original attribution remains in the package's `ORIGINS.md` and preserved history. The abandoned audio teardown experiment does not appear in the cleaned series.
+
+Before this evidence-only update, cleaned commit `cce3fd58c6e7c7348501eeed54a86b9483e533da` and tested candidate `e68351a1db2e1eefb3a706a4388041d7065e97b5` have the identical complete Git tree `351608c5c7df84af569019a2081dbca3866d77b4`. This includes tracked file contents, executable modes and symlinks. Runtime, setup, migration, test and package trees also match the installed build's recorded source `20b8ae0f`. Subsequent changes in this cleanup are confined to this validation report and the current-state paragraphs in the shared plan/reference.
+
+The standalone package suite passed again from an archive containing only the add-on directory. Its staged files match all 16 installed payload files in contents and permissions. The original package pin stays at `20b8ae0f`; no new build or live package transaction is needed for identical implementation bytes.
+
+The non-root desktop aggregate passed CLI and 285 of 286 shell test files on the cleaned tree, using `env -u NO_COLOR -u LC_ALL TERM=xterm-256color ./test/all`. Its only failure is the pre-existing `optional-transactions-drift-test.sh`, already reproduced on the old baseline. The unchanged snapshot-restore test passed in this run. There are no new test failures from the history cleanup.
+
+Durable cleanup evidence is under `~/omarchy-mac-recovery/merge-readiness-20260919/history-cleanup/`: `reconstruction.json` maps original commits to the cleaned series and records tree equality; `reconstruct-history.py` preserves the reconstruction procedure; `payload-equivalence.json`, `package-tests.log` and `desktop-all.log` record repeat validation. `cleaned-series.txt` lists the reconstructed commits before this evidence update.
+
+The old shared head is preserved as `archive/quattro-upstream-before-package-20260919` (`efb7ca91`), and the tested candidate as `archive/mac-package-tested-20260919` (`e68351a1`). Publication updates `quattro-upstream` using an explicit lease on its old head, together with those backup branches. The active dev link and installed packages remain on their tested revisions; their runtime and package contents are identical to the cleaned publication series. Further changes to the upstream base or implementation will need fresh validation.
