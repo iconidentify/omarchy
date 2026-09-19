@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# omarchy:summary=Detect Apple Silicon using the legacy command name.
+# omarchy:hidden=true
+
+# Preserved user services can still refer to this pre-Quattro name.
+exec omarchy-hw-apple-silicon "$@"

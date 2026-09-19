@@ -22,17 +22,27 @@ printf 'apple,j314s\0apple,arm-platform\0' >"$proc_root/device-tree/compatible"
 OMARCHY_PROC_ROOT="$proc_root" PATH="$stub_bin:$PATH" "$ROOT/bin/omarchy-hw-apple-silicon" ||
   fail "Apple Silicon detector accepts aarch64 Apple device trees"
 pass "Apple Silicon detector accepts aarch64 Apple device trees"
+OMARCHY_PROC_ROOT="$proc_root" PATH="$stub_bin:$ROOT/bin:$PATH" "$ROOT/bin/omarchy-hw-apple" ||
+  fail "legacy detector keeps preserved Apple user services working"
+pass "legacy detector keeps preserved Apple user services working"
 
 if OMARCHY_TEST_ARCH=x86_64 OMARCHY_PROC_ROOT="$proc_root" PATH="$stub_bin:$PATH" "$ROOT/bin/omarchy-hw-apple-silicon"; then
   fail "Apple Silicon detector rejects non-aarch64 systems"
 fi
 pass "Apple Silicon detector rejects non-aarch64 systems"
+if OMARCHY_TEST_ARCH=x86_64 OMARCHY_PROC_ROOT="$proc_root" PATH="$stub_bin:$ROOT/bin:$PATH" "$ROOT/bin/omarchy-hw-apple"; then
+  fail "legacy detector rejects Intel and T2 systems"
+fi
 
 printf 'linux,dummy-virt\0' >"$proc_root/device-tree/compatible"
 if OMARCHY_PROC_ROOT="$proc_root" PATH="$stub_bin:$PATH" "$ROOT/bin/omarchy-hw-apple-silicon"; then
   fail "Apple Silicon detector rejects non-Apple aarch64 systems"
 fi
 pass "Apple Silicon detector rejects non-Apple aarch64 systems"
+if OMARCHY_PROC_ROOT="$proc_root" PATH="$stub_bin:$ROOT/bin:$PATH" "$ROOT/bin/omarchy-hw-apple"; then
+  fail "legacy detector rejects other ARM systems"
+fi
+pass "legacy detector preserves the Apple Silicon hardware gate"
 
 cat >"$stub_bin/omarchy-hw-apple-silicon" <<'EOF'
 #!/bin/bash
