@@ -27,6 +27,8 @@ Marcelo, Scott, Wes and Naeem will coordinate review of the add-on integration a
 
 **Keeping the collaboration branch working is part of every merge.** The person merging a PR is responsible for checking the change against the current `quattro-upstream`, including work merged by other contributors, and recording the tested revision and results in the PR. For code changes, run the relevant tests and the normal desktop aggregate suite as a non-root user; changes affecting packages, installation or hardware also need the corresponding transaction, integration or physical checks. Arrange help from other contributors when the required hardware or component expertise is needed.
 
+Before merging desktop/runtime changes, exercise the proposed change combined with the latest collaboration branch through `omarchy dev link <path-to-checkout>` on a test machine. This runs the desktop from that checkout, so check both the changed behavior and ordinary desktop use with the other integrated work present. Use matching development packages where required: dev linking does not rebuild or install the add-on or replace files installed at fixed system paths. Record the source/package revisions, machine and results in the PR. A fresh end-to-end installation is not required for every PR at this stage; changes to installation or package transitions still need checks appropriate to that change.
+
 Use reviewed PRs, with branch protection enforcing review once configured. After merging, check the resulting build and affected integrated behavior. The merger owns follow-through with the author if a regression appears: fix or revert it promptly and withhold affected development packages until it is resolved. The hourly add-on build supplies an artifact and standalone test evidence; it does not establish that the combined desktop, installer and hardware stack works. Keep experiments that cannot yet meet these checks on their own branches.
 
 Keep contributions focused and preserve attribution. Mark new commits with `Upstream-Status: candidate`, `Upstream-Status: experimental` or `Upstream-Status: temporary`; explain the purpose and exit condition for experiments and temporary glue. Preserve shared history by default. Coordinate any exceptional rewrite; submission branches can be cleaned independently.
@@ -115,6 +117,8 @@ The [Honeykrisp package proposal](https://app.basecamp.com/5994298/buckets/48646
 ## First milestone and existing work
 
 `recorded signed packages → encrypted fresh install → independent boot → reclaim installer space → package/kernel update → reboot → recovery`
+
+**Before the assembled Apple Silicon integration is merged upstream, validate a full installation of the combined candidate.** Once its components are integrated, run the complete milestone above from macOS through the encrypted installed system, normal desktop use, updates and recovery, using recorded source revisions and the intended package set. Dev-linked testing during development does not replace this final installation check. Record the tested hardware, results and remaining limits; repeat affected checks if subsequent changes invalidate that evidence. Independent fixes can continue upstream separately.
 
 Use physical Macs for firmware, graphics, audio, suspend, encrypted boot and recovery; ARM VMs for package transactions; disposable storage for interruption tests; and x86 regression checks for shared runtime. Record exact artifacts, repository configuration, hardware and limitations. Each experimental hardware/kernel path needs its own evidence.
 
