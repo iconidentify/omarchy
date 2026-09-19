@@ -37,7 +37,7 @@ sudo() { "$@"; }
 pacman() { printf '%s\n' "$*" >>"$work/calls"; return "${pacman_status:-0}"; }
 omarchy_pacman_stage edge "$work"
 omarchy_pacman_preflight "$work" edge
-for target in omarchy-dev omarchy-settings-dev omarchy-settings-asahi linux-asahi asahi-alarm-keyring; do
+for target in omarchy-dev omarchy-settings-dev omarchy-mac linux-asahi asahi-alarm-keyring; do
   grep -Fq "$target" "$work/calls" || fail "ARM preflight checks $target"
 done
 grep -Fq -- "--dbpath $work/db" "$work/calls" || fail 'preflight database isolated'

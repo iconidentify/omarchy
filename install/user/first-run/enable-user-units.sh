@@ -18,4 +18,9 @@ systemctl --user enable --now \
   omarchy-sleep-lock.service \
   omarchy-migrate-notify.service \
   omarchy-fcitx5.service \
-  omarchy-crash-watch.service
+  omarchy-crash-watch.service \
+  omarchy-brightness-keyboard-auto.service
+
+if omarchy-hw-apple-silicon; then
+  omarchy-mac-setup-user
+fi

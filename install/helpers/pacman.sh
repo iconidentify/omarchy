@@ -40,7 +40,7 @@ omarchy_pacman_preflight() {
   local -a packages=(omarchy omarchy-settings)
   [[ $channel != "edge" ]] || packages=(omarchy-dev omarchy-settings-dev)
   if omarchy-hw-apple-silicon; then
-    packages+=(omarchy-settings-asahi linux-asahi asahi-alarm-keyring)
+    packages+=(omarchy-mac linux-asahi asahi-alarm-keyring)
   fi
   mkdir -p "$staged/db"
   chmod 755 "$staged" "$staged/db"

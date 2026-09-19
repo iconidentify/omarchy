@@ -11,4 +11,6 @@ hl.on("hyprland.start", function()
 
   -- Run post-boot hooks after startup config has loaded.
   hl.exec_cmd("sleep 2 && omarchy-hook post-boot")
+  -- Setup runs during provisioning, first-run and migration; respect later disables.
+  hl.exec_cmd("omarchy-hw-apple-silicon && systemctl --user is-enabled --quiet omarchy-asahi-mic.service && systemctl --user start omarchy-asahi-mic.service")
 end)

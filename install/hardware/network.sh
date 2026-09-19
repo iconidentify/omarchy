@@ -1,11 +1,12 @@
 # NetworkManager enablement is centralized in enable-services.sh.
-# The Apple profile installs omarchy-settings-asahi before offline setup.
+# The Apple profile installs omarchy-mac before offline setup.
 # It owns the vendor iwd default; /etc remains administrator-owned.
 if omarchy-hw-apple-silicon; then
-  pacman -Q omarchy-settings-asahi >/dev/null || {
-    echo "Error: Apple setup requires omarchy-settings-asahi in the installed package set." >&2
+  pacman -Q omarchy-mac >/dev/null || {
+    echo "Error: Apple setup requires omarchy-mac in the installed package set." >&2
     return 1
   }
+  omarchy-mac-setup-system
 fi
 systemctl disable iwd.service 2>/dev/null || true
 
