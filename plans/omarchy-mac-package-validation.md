@@ -1,6 +1,6 @@
 # omarchy-mac candidate validation
 
-Updated 2026-09-19. The coordinated package trial passed on Scott's M2 Max. The package candidate passed its physical trial, and the approved history cleanup preserves the tested implementation. No candidate has been added to the rolling package feed.
+Updated 2026-09-19. The coordinated package trial passed on Scott's M2 Max. After the separate menu-test repair, the normal CLI and all 287 desktop test files pass; earlier failures below are retained as historical evidence. The package candidate passed its physical trial, and the approved history cleanup preserves the tested implementation. No candidate has been added to the rolling package feed.
 
 ## Recorded inputs
 
@@ -92,3 +92,13 @@ The non-root desktop aggregate passed CLI and 285 of 286 shell test files on the
 Durable cleanup evidence is under `~/omarchy-mac-recovery/merge-readiness-20260919/history-cleanup/`: `reconstruction.json` maps original commits to the cleaned series and records tree equality; `reconstruct-history.py` preserves the reconstruction procedure; `payload-equivalence.json`, `package-tests.log` and `desktop-all.log` record repeat validation. `cleaned-series.txt` lists the reconstructed commits before this evidence update.
 
 The old shared head is preserved as `archive/quattro-upstream-before-package-20260919` (`efb7ca91`), and the tested candidate as `archive/mac-package-tested-20260919` (`e68351a1`). Publication updates `quattro-upstream` using an explicit lease on its old head, together with those backup branches. The active dev link and installed packages remain on their tested revisions; their runtime and package contents are identical to the cleaned publication series. Further changes to the upstream base or implementation will need fresh validation.
+
+## Green aggregate after the architecture-test repair
+
+Commit `7ef693b6394dc949e61a514b94b58e8f5974e3ae` replaces the failing static menu-condition parser with separate x86_64 and Apple Silicon/aarch64 test entrypoints sharing the same checks. Conditional guards are evaluated by Bash. The Steam, preinstalls and Xbox-controller recipes run with mocked commands and an empty PATH, stopping at their package request before any system changes. Static recipes retain independent package derivation. Each required package is also made unavailable in turn to verify the guard rejects it.
+
+Both focused architecture tests pass. Four deliberate mutations in a disposable source copy prove the checks detect package-array drift, a missing ARM Steam guard, an accidentally optional Steam dependency and the wrong ARM kernel headers. ARM-only mutations leave the independent x86 test passing.
+
+The full non-root command `env -u NO_COLOR -u LC_ALL TERM=xterm-256color ./test/all` exits zero: CLI and **all 287 shell test files pass**, including snapshot restore. No tests are skipped to hide the former failure. Logs and mutation results are under `~/omarchy-mac-recovery/merge-readiness-20260919/optional-menu-test-fix/`; the earlier run interrupted to split the tests is retained separately.
+
+The package refactor's recorded 1,213-line reduction remains the measurement at `20b8ae0f`. This additional general test repair adds 61 net test lines. Against `350c4655`, the combined delta now removes 597 runtime/setup/migration lines and 555 test lines: **1,152 lines net**. The repair changes no installed runtime, package payload or migration behavior, so the built artifacts and physical-trial evidence remain applicable.

@@ -4,7 +4,7 @@ Supporting detail for the [upstream integration plan](upstream-integration-plan.
 
 ## Add-on extraction record
 
-The candidate began with Wi-Fi recovery, then added the other components. The final extraction removes 1,213 desktop lines against `350c4655`, including compatibility wrappers, the optional mapper guard and regression tests. The unsuccessful audio-restart workaround is excluded. The cleaned history introduces the package directly, with separate desktop interfaces, integration and migration commits; its implementation matches the tested candidate. Counts exclude package source, plans and documentation. An upstream desktop submission must omit `packages/`. See the [validation report](../plans/omarchy-mac-package-validation.md) for exact revisions, successful package/boot checks and remaining limits.
+The candidate began with Wi-Fi recovery, then added the other components. The package-refactor delta at `20b8ae0f` removes 1,213 desktop lines against `350c4655`, including compatibility wrappers, the optional mapper guard and regression tests. The subsequent general menu-test repair adds 61 test lines, giving a combined desktop reduction of 1,152 lines. The unsuccessful audio-restart workaround is excluded. The cleaned history introduces the package directly, with separate desktop interfaces, integration and migration commits; its implementation matches the tested candidate. Counts exclude package source, plans and documentation. An upstream desktop submission must omit `packages/`. See the [validation report](../plans/omarchy-mac-package-validation.md) for exact revisions, successful package/boot checks and remaining limits.
 
 ## Package delivery observations
 

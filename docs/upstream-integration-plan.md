@@ -21,9 +21,9 @@ The main release initiatives already cover [M1/M2 launch](https://app.basecamp.c
 
 ## Shared development and upstream contributions
 
-`quattro-upstream` is the attempt to distill `omarchy-mac` into an upstream-mergeable branch. It brings the accumulated work onto upstream Quattro with Marcelo's [#9835](https://github.com/omacom/omarchy/pull/9835) adapted in. It is the shared review starting point, not a completed upstream merge.
+`quattro-upstream` distills `omarchy-mac` into a shared branch for developing upstream contributions. It brings the accumulated work onto upstream Quattro with Marcelo's [#9835](https://github.com/omacom/omarchy/pull/9835) adapted in and now includes the package refactor. It is the shared review starting point, not a completed upstream merge.
 
-Marcelo, Scott, Wes and Naeem will coordinate the add-on extraction and preparation of the remaining upstream merge. After #9835 lands, compare its actual merged implementation with the distilled branch, reconcile differences and prepare the remaining desktop delta. Ready independent fixes can continue through review throughout this work.
+Marcelo, Scott, Wes and Naeem will coordinate review of the add-on integration and preparation of the remaining upstream merge. After #9835 lands, compare its actual merged implementation with the distilled branch, reconcile differences and prepare the remaining desktop delta. Ready independent fixes can continue through review throughout this work.
 
 Keep contributions focused and preserve attribution. Mark new commits with `Upstream-Status: candidate`, `Upstream-Status: experimental` or `Upstream-Status: temporary`; explain the purpose and exit condition for experiments and temporary glue. Preserve shared history by default. Coordinate any exceptional rewrite; submission branches can be cleaned independently.
 
@@ -35,7 +35,7 @@ The [dated merge tracker](upstream-integration-reference.md#upstream-merge-recor
 
 Persistent Apple defaults and support services belong in the add-on; shared discovery and desktop interfaces stay in Omarchy. The package complements `omarchy` and `omarchy-settings`. It neither provides nor replaces them, selects no kernel, contains no installer and installs no repository trust configuration.
 
-The source directory is independently buildable, with its own version, MIT license, attribution, tests and staging/install script. Preserve original commit references when extracting code. The separate PKGBUILD pins a collaboration-repository commit and packages only that directory. Propose official recipe publication with the packaging maintainers; keep the candidate available through the agreed collaboration channel while that work proceeds.
+The [source directory](../packages/omarchy-mac/) is independently buildable, with its own version, MIT license, attribution, tests and staging/install script. Preserve original commit references when extracting code. The separate PKGBUILD pins a collaboration-repository commit and packages only that directory. Propose official recipe publication with the packaging maintainers; keep the candidate available through the agreed collaboration channel while that work proceeds.
 
 | First-release component | Package responsibility |
 | --- | --- |
@@ -123,7 +123,7 @@ We have taken two steps:
 1. **Distilled the existing fork onto upstream Quattro**, incorporating Marcelo's #9835 with adaptations. Published as `quattro-upstream`, this is a common review starting point for the remaining Apple Silicon changes.
 2. **Extracted and validated the separate `omarchy-mac` add-on on an M2 Max.** The package refactor is incorporated into the cleaned `quattro-upstream` history. The runtime, settings, add-on and published Steam launcher installed together without ownership conflicts; pending migrations completed. The final package set passed reboot, Wi-Fi, playback and microphone recording/playback. Earlier trials also covered suspend/resume. This is not yet a signed tester release.
 
-The package split is now the implemented integration path. Standalone builds, dependency/ownership checks, scratch upgrade/rollback/retry and the live migration trial are recorded in the [validation report](../plans/omarchy-mac-package-validation.md). Administrator overrides were retained. A WirePlumber restart stall also reproduces with the pre-refactor command; the unsuccessful workaround was excluded. Known automated-test limitations, broader hardware coverage, full installer validation and signed package delivery remain documented separately.
+The package split is now the implemented integration path. Standalone builds, dependency/ownership checks, scratch upgrade/rollback/retry and the live migration trial are recorded in the [validation report](../plans/omarchy-mac-package-validation.md). Administrator overrides were retained. A WirePlumber restart stall also reproduces with the pre-refactor command; the unsuccessful workaround was excluded. The CLI and all 287 desktop test files now pass, including separate x86_64 and Apple Silicon package-guard checks. Broader hardware coverage, full installer validation and signed package delivery remain ahead.
 
 Installer integration remains unverified against this branch. Marcelo's tested runtime/package baseline needs clarification; the desktop/add-on trial provides no evidence of that integration.
 
