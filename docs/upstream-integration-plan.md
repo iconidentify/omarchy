@@ -108,11 +108,39 @@ Marcelo's [public installer documentation](https://github.com/maralcbr/omarchy-m
 
 ## MLX and its graphics dependencies
 
-Josh's [M1/M2 MLX/ANE release card](https://app.basecamp.com/5994298/buckets/48646031/card_tables/cards/10264591646), read September 19, bounds the initial capability around installation, GPU inference, stated ANE coverage, non-fatal upgrades and documented limits. Later-chip support, full performance parity and broader coverage have separate scope.
+ANE support should ship by default on Apple Silicon, alongside GPU support. The driver should load on supported chips, with the required firmware and device-tree support included in the installation. Model downloads and inference servers remain optional.
 
-**Josh:** please develop the MLX/CoreML/ANE integration proposal here, using that bounded release scope. Identify what ships by default or optionally, the source/package/wheel set, Mesa/Honeykrisp and kernel/ANE/compiler dependencies, supported models and acceptance demonstrations. State functional readiness separately from performance targets, and identify what assistance is needed.
+The first-release target is GPU inference and ANE support across M1 and M2, including base, Pro, Max and Ultra. The latest ANE release covers M1. M2 support is underway and expected to ship shortly.
 
-The [Honeykrisp package proposal](https://app.basecamp.com/5994298/buckets/48646031/card_tables/cards/10320749071) is a shared graphics dependency: Josh brings the ML requirements and patches, graphics contributors review integration and desktop behavior, and packaging maintainers deliver the agreed tested Mesa build. Define that build together so the installer delivers a compatible graphics and ML stack.
+### Release targets
+
+mlx-omarchy v1.0.0 and omarchy-ane v1.0.0 will mark the first Omarchy-ready releases. A fresh installation must run GPU inference and the Parakeet ANE demo on each M1/M2 variant. Both must continue working after a system update and reboot.
+
+Package those versions, or a newer stable pair available at launch. Josh will provide the versions tested together, including the Mesa build and ANE compiler. Performance parity, later-chip support and broader MLX coverage remain separate workstreams.
+
+### Repositories
+
+Josh has offered to transfer [mlx-omarchy](https://github.com/joshuaswarren/mlx-omarchy), [omarchy-ane](https://github.com/joshuaswarren/omarchy-ane) and the [ANE compiler](https://github.com/joshuaswarren/mil-hwx-compiler) to omacom. Development continues in the current repositories until the transfers and his ongoing write access are arranged.
+
+The ANE compiler stays in a separate repository so other projects can use it. It should have its own package, pulled in by MLX wherever compilation is needed. Users should get one installation without setting up the compiler by hand.
+
+Mesa development is in [mesa-1](https://github.com/joshuaswarren/mesa-1/tree/honeykrisp-omarchy), with changes submitted to omacom/mesa and upstream Mesa. Josh currently lacks maintainer or write access to omacom/mesa. DJ or Josh will need that access to maintain the shared branch, ideally both.
+
+### Installation and updates
+
+The installer should deliver the ANE driver and Honeykrisp Mesa build with the system. The Mesa fixes are a dependency of the MLX release and must reach users through normal package installations and updates.
+
+Use omarchy-pkgs-aarch64 for the initial packages, then move them into the official repositories with the rest of the release.
+
+MLX retains a one-command installation that installs the runtime and Python dependencies together. ANE support must be part of the release kernel and boot flow, with driver, firmware and device-tree updates handled through normal system updates. Existing installations should receive the same support without manual boot-file repairs.
+
+### Ownership and coordination
+
+Josh owns the MLX runtime, ANE driver and firmware work, compiler integration, and ML tests. He will coordinate Mesa changes with DJ and the graphics contributors.
+
+Installer, kernel and packaging maintainers need to coordinate with Josh on the default installation, updates and package publication. Scott will be asked to confirm the contacts for those roles. Additional testers are needed for the M1/M2 variants not covered by Josh's hardware.
+
+Current results and remaining work stay on the Local ML and Honeykrisp packaging cards in Basecamp.
 
 ## First milestone and existing work
 
