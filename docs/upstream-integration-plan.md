@@ -13,7 +13,7 @@ One Apple Silicon Omarchy system that testers can install, developed together an
 | Desktop and shared helpers | `omacom/omarchy-mac:quattro-upstream`, distilling the accumulated fork into upstream-reviewable changes | Focused PRs to `omacom/omarchy` |
 | Persistent Apple configuration and services | `packages/omarchy-mac/` in that repository; PKGBUILD in `omarchy-mac/omarchy-pkgs-aarch64` | Independently versioned `omarchy-mac` add-on, with official recipe publication and any later source-repository split agreed with maintainers |
 | macOS app, Apple boot preparation and encrypted Linux installation | Reuse [Marcelo's macOS installer](https://github.com/maralcbr/omarchy-mx-mac/tree/main/apps/omarchy-apple-installer) and suitable [omarchy-mac-iso](https://github.com/omarchy-mac/omarchy-mac-iso) components in a shared installer project | Companion installer repository, with reusable Linux installation changes proposed to `omacom/omarchy-iso`; exact homes to agree |
-| Packages testers install | Use [omarchy-pkgs-aarch64](https://github.com/omarchy-mac/omarchy-pkgs-aarch64) for the release, completing signing and validation of the compatible package set | Official Omarchy packaging or the appropriate upstream providers as components are accepted |
+| Development packages for testing | Use [omarchy-pkgs-aarch64](https://github.com/omarchy-mac/omarchy-pkgs-aarch64) for the release, completing signing and validation of the compatible package set | Official Omarchy packaging or the appropriate upstream providers as components are accepted |
 
 The collaboration **branch** is what we develop together. The collaboration **channel** is what testers install together. Official ARM packages help, but we still need to distribute desktop and add-on changes that have not landed upstream.
 
@@ -24,6 +24,10 @@ The main release initiatives already cover [M1/M2 launch](https://app.basecamp.c
 `quattro-upstream` distills `omarchy-mac` into a shared branch for developing upstream contributions. It brings the accumulated work onto upstream Quattro with Marcelo's [#9835](https://github.com/omacom/omarchy/pull/9835) adapted in and now includes the package refactor. It is the shared review starting point, not a completed upstream merge.
 
 Marcelo, Scott, Wes and Naeem will coordinate review of the add-on integration and preparation of the remaining upstream merge. After #9835 lands, compare its actual merged implementation with the distilled branch, reconcile differences and prepare the remaining desktop delta. Ready independent fixes can continue through review throughout this work.
+
+**Keeping the collaboration branch working is part of every merge.** The person merging a PR is responsible for checking the change against the current `quattro-upstream`, including work merged by other contributors, and recording the tested revision and results in the PR. For code changes, run the relevant tests and the normal desktop aggregate suite as a non-root user; changes affecting packages, installation or hardware also need the corresponding transaction, integration or physical checks. Arrange help from other contributors when the required hardware or component expertise is needed.
+
+Use reviewed PRs, with branch protection enforcing review once configured. After merging, check the resulting build and affected integrated behavior. The merger owns follow-through with the author if a regression appears: fix or revert it promptly and withhold affected development packages until it is resolved. The hourly add-on build supplies an artifact and standalone test evidence; it does not establish that the combined desktop, installer and hardware stack works. Keep experiments that cannot yet meet these checks on their own branches.
 
 Keep contributions focused and preserve attribution. Mark new commits with `Upstream-Status: candidate`, `Upstream-Status: experimental` or `Upstream-Status: temporary`; explain the purpose and exit condition for experiments and temporary glue. Preserve shared history by default. Coordinate any exceptional rewrite; submission branches can be cleaned independently.
 
@@ -51,9 +55,11 @@ Validate the runtime/settings/add-on transaction together: each transferred file
 
 Bindings, trackpad defaults, Electron workarounds, ambient-light support, HID early-loading, function-key/initramfs handling, boot management, snapshots and installer work stay outside this first package. The wider direction remains package-owned system defaults, a desktop platform layer below user choices, shared hardware discovery and explicit package/boot lifecycle ownership. Those broader changes are separate work, not additions to this initial package scope.
 
-## Packages testers install
+## Development packages for testing
 
 Use [omarchy-mac/omarchy-pkgs-aarch64](https://github.com/omarchy-mac/omarchy-pkgs-aarch64) as the initial collaboration package source for testers and the release. Complete its publication and signing work to provide one reproducible package set for both fresh installations and existing testers. It must include new names such as `omarchy-mac` and the needed branch-built replacements for `omarchy` and `omarchy-settings`. Record exact source and recipe revisions, versions, providers and signers.
+
+These development packages let us test the evolving system together. Their current grouping and repository are provisional; the intended destination is upstream Omarchy and the appropriate upstream package providers. Integrate and validate continuously as parallel work lands, with a recorded compatible set for each distributed build.
 
 Repository precedence must select those intended replacements. Test installation, upgrades, equal versions, locally newer packages and leaving the channel. Coordinate ownership across runtime, settings and add-on packages. Availability of an official ARM package does not establish that it contains the collaboration changes or that the complete installation path is qualified.
 
