@@ -1,0 +1,48 @@
+#!/bin/bash
+# omarchy:summary=Activate the Apple microphone mapping for this user
+# omarchy:hidden=true
+set -euo pipefail
+root=${1:-/}
+root=${root%/}
+[[ -z $root || $root == /* ]] || exit 2
+omarchy-hw-apple-silicon || exit 0
+config=${XDG_CONFIG_HOME:-$HOME/.config}
+policy="$config/wireplumber/wireplumber.conf.d/asahi-headset-mic.conf"
+# A matching user copy hides future vendor updates. Modified files and links stay.
+if [[ -f $policy && ! -L $policy ]] && cmp -s "$policy" "$root/usr/share/omarchy-mac/legacy/asahi-headset-mic.conf"; then
+  if [[ -e $policy.omarchy-mac-retired || -L $policy.omarchy-mac-retired ]]; then
+    cmp -s "$policy" "$policy.omarchy-mac-retired" || exit 1
+    rm -- "$policy"
+  else
+    mv -- "$policy" "$policy.omarchy-mac-retired"
+  fi
+fi
+unit=omarchy-asahi-mic.service
+# Masks, custom fragments and custom wants links are user/administrator choices.
+# Never enable --force or replace them with a vendor fragment.
+for file in "$config/systemd/user/$unit" "$root/etc/systemd/user/$unit" "${XDG_RUNTIME_DIR:-/run/user/$UID}/systemd/user/$unit" "$root/run/systemd/user/$unit"; do
+  if [[ -e $file || -L $file ]]; then
+    echo "Preserving microphone service override: $file"
+    exit 0
+  fi
+done
+wants="$config/systemd/user/graphical-session.target.wants"
+marker="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/mac-microphone-configured"
+if [[ -f $marker && ! -e $wants/$unit && ! -L $wants/$unit ]]; then
+  echo "Preserving disabled microphone service"
+  exit 0
+fi
+mkdir -p "$wants"
+if [[ ! -e $wants/$unit && ! -L $wants/$unit ]]; then
+  ln -s "/usr/lib/systemd/user/$unit" "$wants/$unit"
+elif [[ ! -L $wants/$unit || $(readlink "$wants/$unit") != "/usr/lib/systemd/user/$unit" ]]; then
+  echo "Preserving microphone activation override: $wants/$unit"
+  exit 0
+fi
+install -Dm644 /dev/null "$marker"
+# Offline user finalization needs no user bus or PipeWire endpoints.
+if [[ -z $root && -S ${XDG_RUNTIME_DIR:-/run/user/$UID}/bus ]]; then
+  systemctl --user daemon-reload
+  systemctl --user cat "$unit"
+  systemctl --user start "$unit"
+fi

@@ -1,0 +1,4 @@
+#!/bin/bash
+# BCM4388 (4434) is intentionally excluded; T2 Macs share the other PCI IDs.
+set -o pipefail
+omarchy-hw-apple-silicon && lspci -nn | grep -E '14e4:(4425|4433)' >/dev/null

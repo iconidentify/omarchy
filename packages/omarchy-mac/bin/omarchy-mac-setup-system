@@ -1,0 +1,56 @@
+#!/bin/bash
+# omarchy:summary=Set up package-owned Apple Silicon services
+# omarchy:hidden=true
+# Optional root permits offline provisioning on the target hardware.
+set -euo pipefail
+root=${1:-/}
+root=${root%/}
+[[ -z $root || $root == /* ]] || exit 2
+omarchy-hw-apple-silicon || exit 0
+share="$root/usr/share/omarchy-mac"
+
+# Retire only byte-identical generated files, never links (including masks).
+retire() {
+  local file=$1 original=$2
+  if [[ -f $file && ! -L $file ]] && cmp -s "$file" "$original"; then
+    if [[ -e $file.omarchy-mac-retired || -L $file.omarchy-mac-retired ]]; then
+      cmp -s "$file" "$file.omarchy-mac-retired" || return 1
+      rm -- "$file"
+    else
+      mv -- "$file" "$file.omarchy-mac-retired"
+    fi
+  fi
+}
+
+retire "$root/etc/NetworkManager/conf.d/wifi_backend.conf" "$share/legacy/wifi_backend.conf"
+retire "$root/etc/modprobe.d/asahi-notch.conf" "$share/legacy/asahi-notch.conf"
+
+unit=omarchy-wifi-resume-fix.service
+retire "$root/etc/systemd/system/$unit" "$share/legacy/$unit"
+# Generated enablement links still point into /etc after the fragment retires.
+# Repair only those exact links; masks and custom links remain authoritative.
+if [[ ! -e $root/etc/systemd/system/$unit && ! -L $root/etc/systemd/system/$unit ]] &&
+  cmp -s "$root/etc/systemd/system/$unit.omarchy-mac-retired" "$share/legacy/$unit"; then
+  for target in suspend hibernate hybrid-sleep suspend-then-hibernate; do
+    link="$root/etc/systemd/system/$target.target.wants/$unit"
+    if [[ -L $link && $(readlink "$link") == "/etc/systemd/system/$unit" ]]; then
+      ln -sfn "/usr/lib/systemd/system/$unit" "$link"
+    fi
+  done
+fi
+marker="$root/var/lib/omarchy-mac/wifi-configured"
+if "$root/usr/lib/omarchy-mac/wifi-supported" && [[ ! -f $marker ]]; then
+  if [[ -e $root/etc/systemd/system/$unit || -L $root/etc/systemd/system/$unit || -e $root/run/systemd/system/$unit || -L $root/run/systemd/system/$unit ]]; then
+    echo "Preserving Wi-Fi unit override: $root/etc/systemd/system/$unit"
+  else
+    systemctl --root="${root:-/}" enable "$unit"
+    install -Dm644 /dev/null "$marker"
+  fi
+fi
+if [[ -z $root && -d /run/systemd/system ]]; then
+  systemctl daemon-reload
+  # cat exits nonzero for an intentional mask; report it without failing setup.
+  systemctl cat "$unit" || true
+  NetworkManager --print-config
+  modprobe --showconfig | grep -E '^options appledrm ' || true
+fi
