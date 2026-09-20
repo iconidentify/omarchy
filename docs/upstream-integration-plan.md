@@ -110,7 +110,7 @@ Marcelo's [public installer documentation](https://github.com/maralcbr/omarchy-m
 
 ANE support should ship by default on Apple Silicon, alongside GPU support. The driver should load on supported chips, with the required firmware and device-tree support included in the installation. Model downloads and inference servers remain optional.
 
-The first-release target is GPU inference and ANE support across M1 and M2, including base, Pro, Max and Ultra. The latest ANE release covers M1. M2 support is underway and expected to ship shortly.
+The first-release target is GPU inference and ANE support across M1 and M2, including base, Pro, Max and Ultra. As of September 19, the tagged [ANE v0.1.0 release](https://github.com/joshuaswarren/omarchy-ane/releases/tag/v0.1.0) qualifies M1 and M1 Max; M1 Pro and Ultra still need qualification, and M2 support is under development. The broader target remains subject to implementation and per-variant validation before support is enabled by default.
 
 ### Release targets
 
