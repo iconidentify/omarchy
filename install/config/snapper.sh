@@ -46,8 +46,11 @@ configure_snapper_root() {
     # Setup and the service-repair migration both promise active cleanup,
     # including when an existing root already has custom retention policy.
     systemctl enable --now snapper-cleanup.timer || return $?
+    # Query installed unit files without a running manager. In a chroot,
+    # `systemctl cat` is ignored and returns success even for an absent unit.
     # Limine installs ship this optional unit; Apple/GRUB installs do not.
-    if systemctl cat limine-snapper-sync.service >/dev/null 2>&1; then
+    if systemctl --root=/ list-unit-files --no-legend limine-snapper-sync.service 2>/dev/null |
+      grep -q '^limine-snapper-sync.service[[:space:]]'; then
       systemctl enable --now limine-snapper-sync.service || return $?
     fi
     return 0
