@@ -48,7 +48,13 @@ case "$*" in
     [[ ${FAIL_AT:-} != timer ]] || exit 23
     touch "$FIXTURE/cleanup-active" ;;
   'cat limine-snapper-sync.service')
-    [[ ${TEST_LIMINE_AVAILABLE:-0} == "1" ]] ;;
+    # Real systemctl ignores this verb in a chroot, even for an absent unit.
+    echo "Running in chroot, ignoring command 'cat'" >&2
+    exit 0 ;;
+  '--root=/ list-unit-files --no-legend limine-snapper-sync.service')
+    if [[ ${TEST_LIMINE_AVAILABLE:-0} == "1" ]]; then
+      printf 'limine-snapper-sync.service disabled disabled\n'
+    fi ;;
   'enable --now limine-snapper-sync.service')
     [[ ${TEST_LIMINE_AVAILABLE:-0} == "1" ]] || exit 99
     [[ ${FAIL_AT:-} != limine ]] || exit 26

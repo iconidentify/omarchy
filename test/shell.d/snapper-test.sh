@@ -56,7 +56,7 @@ grep -Fx 'systemctl --user stop app-limine\x2dsnapper\x2dnotify@autostart.servic
 pass "Limine Snapper warning notifier migration disables existing user autostart"
 
 grep -F 'limine-snapper-sync.service' "$ROOT/install/config/snapper.sh" >/dev/null
-grep -F 'systemctl cat limine-snapper-sync.service' "$ROOT/install/config/snapper.sh" >/dev/null ||
+grep -F 'systemctl --root=/ list-unit-files --no-legend limine-snapper-sync.service' "$ROOT/install/config/snapper.sh" >/dev/null ||
   fail "Snapper enables Limine snapshot sync only when that unit exists"
 ! grep -F 'if ! omarchy-hw-apple-silicon' "$ROOT/install/config/all.sh" >/dev/null ||
   fail "config phase must not skip Snapper on Apple Silicon"
