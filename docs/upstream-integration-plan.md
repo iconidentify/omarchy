@@ -128,7 +128,7 @@ Ryan/DJ: please confirm whether `tb` is the right integration branch and how the
 
 Scott/Naeem: please confirm who will build and publish the compatible kernel and userspace packages, and who can arrange the library transfer.
 
-Before shipping, test the complete kernel and package set on the named supported models. Check mpv playback for each codec, seeking, concurrent playback and recovery after interruption on a fresh installation and again after an update and reboot. Record the package versions and verify rollback to a compatible set. Keep the results and remaining hardware coverage on the video-acceleration workstream card.
+Chris will handle the remaining video testing against the agreed release kernel and package set, and keep the results and hardware coverage on the video-acceleration workstream card.
 
 ## MLX and its graphics dependencies
 
