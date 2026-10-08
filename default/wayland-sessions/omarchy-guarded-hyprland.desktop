@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Omarchy guarded Hyprland
+Comment=Hyprland with authenticated recovery after a locked-session crash
+Exec=omarchy-session-guard --run Hyprland
+TryExec=Hyprland
+Type=Application
+NoDisplay=true
