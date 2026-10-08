@@ -11,6 +11,7 @@ import tempfile
 
 PAM_LINE = "session required pam_exec.so seteuid /usr/bin/omarchy-session-guard --pam"
 RELOGIN = "[Autologin]\nRelogin=false\n"
+SERVICE_OVERRIDE = "[Service]\nExecStart=\nExecStart=/usr/bin/uwsm aux exec -- %I /usr/bin/omarchy-session-guard --run /usr/bin/Hyprland\n"
 
 
 def check_relogin(target):
@@ -53,6 +54,11 @@ def configure_target(target, rollback=False):
   existing = pam.read_text()
   lines = existing.splitlines()
   if rollback:
+    desktop = target / "usr/local/share/wayland-sessions/omarchy.desktop"
+    guarded = target / "usr/local/share/wayland-sessions/omarchy-guarded-hyprland.desktop"
+    service = target / "usr/lib/systemd/user/wayland-wm@hyprland.desktop.service.d/99-session-lock-recovery.conf"
+    if guarded.exists() or service.exists() or (desktop.exists() and "omarchy-guarded-hyprland.desktop" in desktop.read_text()):
+      raise RuntimeError("restore both previous packages before removing authenticated recovery")
     if PAM_LINE in lines:
       replace_file(pam, "\n".join(line for line in lines if line != PAM_LINE) + "\n")
     return
@@ -62,6 +68,7 @@ def configure_target(target, rollback=False):
   desktop = target / "usr/local/share/wayland-sessions/omarchy.desktop"
   guarded = target / "usr/local/share/wayland-sessions/omarchy-guarded-hyprland.desktop"
   relogin = target / "etc/sddm.conf.d/90-session-lock-recovery.conf"
+  service = target / "usr/lib/systemd/user/wayland-wm@hyprland.desktop.service.d/99-session-lock-recovery.conf"
   if not os.access(helper, os.X_OK) or not implementation.is_file():
     raise RuntimeError("the session guard runtime must be installed first")
   if "Exec=uwsm start -g -1 -e -D Hyprland omarchy-guarded-hyprland.desktop\n" not in desktop.read_text():
@@ -70,6 +77,8 @@ def configure_target(target, rollback=False):
     raise RuntimeError("the guarded Hyprland entry point must be installed first")
   if relogin.read_text() != RELOGIN:
     raise RuntimeError("SDDM automatic relogin must be disabled first")
+  if service.read_text() != SERVICE_OVERRIDE:
+    raise RuntimeError("the existing Hyprland service must select the guard")
   check_relogin(target)
   if PAM_LINE not in lines:
     replace_file(pam, existing.rstrip("\n") + "\n" + PAM_LINE + "\n")

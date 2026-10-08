@@ -9,6 +9,7 @@ import signal
 import stat
 import subprocess
 import sys
+import uuid
 
 
 def state_path():
@@ -16,18 +17,40 @@ def state_path():
 
 
 def open_state():
-  path = state_path()
-  path.mkdir(mode=0o700, parents=True, exist_ok=True)
-  fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-  info = os.fstat(fd)
-  if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700:
+  home = state_path().parents[3]
+  fd = os.open(home, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+  try:
+    info = os.fstat(fd)
+    if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) & 0o022:
+      raise RuntimeError("HOME must be owned and not writable by other users")
+    for name in (".local", "state", "omarchy", "session-guard"):
+      try:
+        os.mkdir(name, 0o700, dir_fd=fd)
+      except FileExistsError:
+        pass
+      child = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+      info = os.fstat(child)
+      if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) & 0o022 or (name == "session-guard" and stat.S_IMODE(info.st_mode) != 0o700):
+        os.close(child)
+        raise RuntimeError("invalid owner or permissions in the lock state namespace")
+      try:
+        # Both the directory and its name in the parent must survive reboot.
+        os.fsync(child)
+        os.fsync(fd)
+      except BaseException:
+        os.close(child)
+        raise
+      os.close(fd)
+      fd = child
+  except BaseException:
     os.close(fd)
-    raise RuntimeError("lock state must be an owned directory with mode 0700")
+    raise
   return fd
 
 
-def open_file(directory, name):
-  fd = os.open(name, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600, dir_fd=directory)
+def open_file(directory, name, create=True):
+  flags = os.O_RDWR | os.O_NOFOLLOW | (os.O_CREAT if create else 0)
+  fd = os.open(name, flags, 0o600, dir_fd=directory)
   info = os.fstat(fd)
   if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600 or info.st_nlink != 1:
     os.close(fd)
@@ -43,25 +66,57 @@ def is_locked(directory):
     return False
 
 
-def change_intent(directory, locked):
+def change_intent(directory, locked, generation=None):
   # Serialize marker updates with compositor admission.
   fd = open_file(directory, "intent.lock")
   try:
     fcntl.flock(fd, fcntl.LOCK_EX)
     if locked:
+      generation = uuid.uuid4().hex
       marker = open_file(directory, "locked")
       try:
+        os.ftruncate(marker, 0)
+        os.write(marker, (generation + "\n").encode("ascii"))
         os.fsync(marker)
       finally:
         os.close(marker)
     else:
       try:
+        if generation is not None:
+          if not is_locked(directory):
+            return
+          marker = open_file(directory, "locked", create=False)
+          try:
+            if os.read(marker, 128).decode("ascii").strip() != generation:
+              return
+          finally:
+            os.close(marker)
         os.unlink("locked", dir_fd=directory)
       except FileNotFoundError:
         pass
     os.fsync(directory)
+    if locked:
+      return generation
   finally:
     os.close(fd)
+
+
+def prepare_unlock(directory, generation):
+  # The caller has authenticated, but still holds the protocol lock. Leave
+  # durable intent in place until that lock has actually been released.
+  admission = open_file(directory, "intent.lock")
+  try:
+    fcntl.flock(admission, fcntl.LOCK_EX)
+    marker = open_file(directory, "locked", create=False)
+    try:
+      if os.read(marker, 128).decode("ascii").strip() != generation:
+        raise RuntimeError("lock generation changed before authenticated unlock")
+      os.fsync(marker)
+      os.fsync(directory)
+    finally:
+      os.close(marker)
+  finally:
+    os.close(admission)
 
 
 def run_compositor(directory, command):
@@ -112,13 +167,21 @@ def main(arguments):
     operation = "--clear"
   elif os.geteuid() == 0:
     raise RuntimeError("root may only use the authenticated PAM hook")
-  if operation not in ("--arm", "--clear", "--run"):
-    raise RuntimeError("expected --arm, --clear, --run or --pam")
+  if operation not in ("--arm", "--prepare-unlock", "--clear", "--run"):
+    raise RuntimeError("expected --arm, --prepare-unlock, --clear, --run or --pam")
   directory = open_state()
   try:
     if operation == "--run":
       return run_compositor(directory, arguments[1:])
-    change_intent(directory, operation == "--arm")
+    if operation == "--prepare-unlock":
+      if len(arguments) != 2:
+        raise RuntimeError("unlock preparation requires its lock generation")
+      prepare_unlock(directory, arguments[1])
+      return 0
+    generation = arguments[1] if len(arguments) == 2 else None
+    result = change_intent(directory, operation == "--arm", generation)
+    if result:
+      print(result)
     return 0
   finally:
     os.close(directory)
@@ -127,6 +190,6 @@ def main(arguments):
 if __name__ == "__main__":
   try:
     sys.exit(main(sys.argv[1:]))
-  except (OSError, RuntimeError, KeyError) as error:
+  except (OSError, RuntimeError, KeyError, ValueError) as error:
     print(f"omarchy-session-guard: {error}", file=sys.stderr)
     sys.exit(1)
