@@ -1,4 +1,5 @@
 import importlib.util
+import errno
 import os
 from pathlib import Path
 import signal
@@ -61,6 +62,58 @@ class SessionGuardTest(unittest.TestCase):
       self.assertEqual(self.invoke("--arm").returncode, 0)
     for _ in range(2):
       self.assertEqual(self.invoke("--clear").returncode, 0)
+
+  def test_stale_unlock_cannot_clear_a_new_lock_generation(self):
+    first = self.invoke("--arm").stdout.strip()
+    self.assertEqual(self.invoke("--prepare-unlock", first).returncode, 0)
+    second = self.invoke("--arm").stdout.strip()
+    self.assertNotEqual(first, second)
+    self.assertEqual(self.invoke("--clear", first).returncode, 0)
+    self.assertTrue((self.state / "locked").exists())
+    self.assertEqual(self.invoke("--run", *self.frame_command()).returncode, 1)
+    self.assertEqual(self.invoke("--prepare-unlock", first).returncode, 1)
+    self.assertEqual(self.invoke("--prepare-unlock", second).returncode, 0)
+    self.assertEqual(self.invoke("--clear", second).returncode, 0)
+    self.assertEqual(self.invoke("--clear", first).returncode, 0)
+    self.assertFalse((self.state / "locked").exists())
+    self.assertEqual(self.invoke("--run", *self.frame_command()).returncode, 0)
+
+  def test_prepare_unlock_fsync_failure_retains_intent(self):
+    generation = self.invoke("--arm").stdout.strip()
+    with patch.dict(guard.os.environ, {"HOME": str(self.home)}):
+      directory = guard.open_state()
+      try:
+        with patch.object(guard.os, "fsync", side_effect=OSError(errno.EIO, "injected fsync failure")):
+          with self.assertRaises(OSError):
+            guard.prepare_unlock(directory, generation)
+      finally:
+        os.close(directory)
+    self.assertTrue((self.state / "locked").exists())
+    self.assertEqual(self.invoke("--run", *self.frame_command()).returncode, 1)
+
+  def test_new_state_namespace_syncs_each_child_and_parent(self):
+    seen = []
+    real_sync = os.fsync
+    def sync(fd):
+      seen.append(Path(os.readlink(f"/proc/self/fd/{fd}")))
+      return real_sync(fd)
+    with patch.dict(guard.os.environ, {"HOME": str(self.home)}), patch.object(guard.os, "fsync", side_effect=sync):
+      directory = guard.open_state()
+      os.close(directory)
+    for path in [self.home, self.home / ".local", self.home / ".local/state", self.home / ".local/state/omarchy", self.state]:
+      self.assertIn(path, seen)
+
+  def test_writable_or_symlink_namespace_parent_blocks_exec(self):
+    self.assertEqual(self.invoke("--arm").returncode, 0)
+    parent = self.state.parent
+    parent.chmod(0o777)
+    self.assertEqual(self.invoke("--run", *self.frame_command()).returncode, 1)
+    parent.chmod(0o700)
+    moved = parent.with_name("other-state")
+    parent.rename(moved)
+    parent.symlink_to(moved)
+    self.assertEqual(self.invoke("--run", *self.frame_command()).returncode, 1)
+    self.assertFalse(self.started.exists())
 
   def test_crash_while_locked_blocks_queued_replacement(self):
     ready = self.home / "ready"
@@ -141,6 +194,8 @@ class SessionGuardTest(unittest.TestCase):
     for entry in ("omarchy.desktop", "omarchy-guarded-hyprland.desktop"):
       place("usr/local/share/wayland-sessions/" + entry, (ROOT / "default/wayland-sessions" / entry).read_text())
     place("etc/sddm.conf.d/90-session-lock-recovery.conf", (ROOT / "etc/sddm.conf.d/90-session-lock-recovery.conf").read_text())
+    service = "wayland-wm@hyprland.desktop.service.d/99-session-lock-recovery.conf"
+    place("usr/lib/systemd/user/" + service, (ROOT / "default/systemd/user" / service).read_text())
     place("etc/pam.d/sddm", "auth include system-login\naccount include system-login\nsession include system-login\n")
     place("etc/pam.d/sddm-autologin", "auth required pam_permit.so\nsession include system-login\n")
 
@@ -153,6 +208,14 @@ class SessionGuardTest(unittest.TestCase):
       installer.configure_target(self.home)
     self.assertEqual(pam.read_text().count(installer.PAM_LINE), 1)
     self.assertEqual(autologin.read_bytes(), auto_before)
+    before_rollback = pam.read_bytes()
+    with self.assertRaises(RuntimeError):
+      installer.configure_target(self.home, rollback=True)
+    self.assertEqual(pam.read_bytes(), before_rollback)
+    # A matching package restoration removes both protected entry points.
+    (self.home / "usr/local/share/wayland-sessions/omarchy-guarded-hyprland.desktop").unlink()
+    (self.home / "usr/lib/systemd/user/wayland-wm@hyprland.desktop.service.d/99-session-lock-recovery.conf").unlink()
+    (self.home / "usr/local/share/wayland-sessions/omarchy.desktop").write_text("[Desktop Entry]\nExec=uwsm start -g -1 -e -D Hyprland hyprland.desktop\n")
     for _ in range(2):
       installer.configure_target(self.home, rollback=True)
     self.assertEqual(pam.read_bytes(), original)
@@ -186,6 +249,23 @@ class SessionGuardTest(unittest.TestCase):
       installer.configure_target(self.home)
     self.assertTrue(pam.is_symlink())
     self.assertEqual(other.read_bytes(), original)
+
+  def test_existing_hyprland_service_keeps_uwsm_as_systemd_child(self):
+    self.stage_target()
+    service = self.home / "usr/lib/systemd/user/wayland-wm@hyprland.desktop.service.d/99-session-lock-recovery.conf"
+    words = next(line for line in service.read_text().splitlines() if line.startswith("ExecStart=/")).split("=", 1)[1].split()
+    self.assertEqual(words[:5], ["/usr/bin/uwsm", "aux", "exec", "--", "%I"])
+    self.assertEqual(words[5:], ["/usr/bin/omarchy-session-guard", "--run", "/usr/bin/Hyprland"])
+    # The old active unit's name is retained; admission changes on its next
+    # start, not by pretending the already-running launcher was replaced.
+    old = service.parent / "50_custom.conf"
+    old.write_text("[Service]\nExecStart=\nExecStart=/usr/bin/uwsm aux exec -- %I /usr/bin/start-hyprland\n")
+    effective = None
+    for dropin in sorted(service.parent.glob("*.conf")):
+      for line in dropin.read_text().splitlines():
+        if line.startswith("ExecStart="):
+          effective = line.split("=", 1)[1]
+    self.assertEqual(effective.split(), words)
 
 
 unittest.main()

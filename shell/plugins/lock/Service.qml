@@ -18,6 +18,7 @@ Item {
 
   property bool lockRequested: false
   property bool lockIntentReady: false
+  property string lockGeneration: ""
   property bool pendingSessionLock: false
   property bool authenticatingPassword: false
   property bool fingerprintAuthenticating: false
@@ -132,6 +133,7 @@ Item {
       logEvent("lock-denied: missing-pam")
       return false
     }
+    if (releaseIntentProcess.running) return false
 
     if (lockRequested || armIntentProcess.running) return true
 
@@ -160,6 +162,7 @@ Item {
   }
 
   function finishAuthenticatedUnlock() {
+    releaseIntentProcess.generation = root.lockGeneration
     lockRequested = false
     lockIntentReady = false
     pendingSessionLock = false
@@ -168,6 +171,7 @@ Item {
     resetAuthenticationState()
     idleBlankTimer.stop()
     sessionLock.locked = false
+    if (!releaseIntentProcess.running) releaseIntentProcess.running = true
     logEvent("unlocked")
     runWake()
   }
@@ -373,8 +377,13 @@ Item {
   Process {
     id: armIntentProcess
     command: [root.omarchyPath + "/bin/omarchy-session-guard", "--arm"]
+    stdout: StdioCollector { id: armIntentOutput; waitForEnd: true }
     onExited: function(exitCode, exitStatus) {
-      if (exitCode === 0 && exitStatus === 0) root.beginSecureLock()
+      var generation = String(armIntentOutput.text || "").trim()
+      if (exitCode === 0 && exitStatus === 0 && /^[0-9a-f]{32}$/.test(generation)) {
+        root.lockGeneration = generation
+        root.beginSecureLock()
+      }
       else {
         root.lockRequested = false
         root.logEvent("lock-denied: could not preserve lock intent")
@@ -384,10 +393,19 @@ Item {
 
   Process {
     id: clearIntentProcess
-    command: [root.omarchyPath + "/bin/omarchy-session-guard", "--clear"]
+    command: [root.omarchyPath + "/bin/omarchy-session-guard", "--prepare-unlock", root.lockGeneration]
     onExited: function(exitCode, exitStatus) {
       if (exitCode === 0 && exitStatus === 0) root.finishAuthenticatedUnlock()
       else root.logEvent("unlock-denied: could not clear lock intent")
+    }
+  }
+
+  Process {
+    id: releaseIntentProcess
+    property string generation: ""
+    command: [root.omarchyPath + "/bin/omarchy-session-guard", "--clear", generation]
+    onExited: function(exitCode, exitStatus) {
+      if (exitCode !== 0 || exitStatus !== 0) root.logEvent("unlock-intent-retained: authenticate at next login")
     }
   }
 

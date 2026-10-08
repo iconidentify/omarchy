@@ -28,7 +28,8 @@ function fixture(source) {
   const marker = path.join(home, '.local/state/omarchy/session-guard/locked')
   const timer = () => ({ running: false, stop() {}, start() {}, restart() {} })
   const ctx = {
-    passwordPamConfigured: true, lockRequested: false, lockIntentReady: false,
+    passwordPamConfigured: true, lockRequested: false, lockIntentReady: false, lockGeneration: '',
+    armIntentOutput: { text: '' },
     pendingSessionLock: false, fingerprintConfigured: false,
     sessionLock: { locked: false, secure: false },
     sessionLockStabilizeTimer: timer(), pendingSessionLockTimer: timer(),
@@ -48,7 +49,7 @@ function fixture(source) {
     const start = source.indexOf('function ' + name + '(')
     if (start >= 0) vm.runInContext(functionText(source, start), ctx)
   }
-  for (const [id, mode] of [['armIntentProcess', '--arm'], ['clearIntentProcess', '--clear']]) {
+  for (const [id, mode] of [['armIntentProcess', '--arm'], ['clearIntentProcess', '--prepare-unlock'], ['releaseIntentProcess', '--clear']]) {
     const idStart = source.indexOf('id: ' + id)
     let callback = () => {}
     if (idStart >= 0) {
@@ -61,9 +62,13 @@ function fixture(source) {
       set(value) {
         process.active = value
         if (!value) return
-        const result = child.spawnSync(path.join(root, 'bin/omarchy-session-guard'), [mode], {
+        if (id === 'releaseIntentProcess') strict.strictEqual(ctx.sessionLock.locked, false, 'intent cleanup only starts after the protocol unlock')
+        const generation = id === 'releaseIntentProcess' ? process.generation : ctx.lockGeneration
+        const arguments = mode === '--arm' ? [mode] : [mode, generation]
+        const result = child.spawnSync(path.join(root, 'bin/omarchy-session-guard'), arguments, {
           env: { ...global.process.env, HOME: home, OMARCHY_PATH: root }, encoding: 'utf8',
         })
+        if (id === 'armIntentProcess') ctx.armIntentOutput.text = result.stdout
         process.active = false
         callback(result.status, result.signal ? 1 : 0)
       },
