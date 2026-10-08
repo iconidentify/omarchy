@@ -17,6 +17,7 @@ Item {
   readonly property string currentBackgroundLink: stateHome + "/omarchy/current/background"
 
   property bool lockRequested: false
+  property bool lockIntentReady: false
   property bool pendingSessionLock: false
   property bool authenticatingPassword: false
   property bool fingerprintAuthenticating: false
@@ -62,6 +63,7 @@ Item {
 
   function requestSessionLock() {
     if (!lockRequested || sessionLock.locked || sessionLock.secure) return
+    if (!lockIntentReady) return
     if (sessionLockStabilizeTimer.running) return
 
     if (!hasRealScreen()) {
@@ -131,8 +133,17 @@ Item {
       return false
     }
 
+    if (lockRequested || armIntentProcess.running) return true
+
     resetAuthenticationState()
     lockRequested = true
+    lockIntentReady = false
+    armIntentProcess.running = true
+    return true
+  }
+
+  function beginSecureLock() {
+    lockIntentReady = true
     armBlankTimer()
     logEvent("lock-requested")
     queueSessionLock()
@@ -141,14 +152,16 @@ Item {
       root.refreshBackground()
       root.refreshFingerprintStatus()
     })
-
-    return true
   }
 
   function finishUnlock() {
     if (!root.locked && !lockRequested) return
+    if (!clearIntentProcess.running) clearIntentProcess.running = true
+  }
 
+  function finishAuthenticatedUnlock() {
     lockRequested = false
+    lockIntentReady = false
     pendingSessionLock = false
     sessionLockStabilizeTimer.stop()
     pendingSessionLockTimer.stop()
@@ -252,12 +265,9 @@ Item {
       }
 
       if (!locked && root.lockRequested) {
-        root.lockRequested = false
-        root.pendingSessionLock = false
-        sessionLockStabilizeTimer.stop()
-        pendingSessionLockTimer.stop()
         root.resetAuthenticationState()
-        root.runWake()
+        root.logEvent("session-lock-lost: authentication still required")
+        root.queueSessionLock()
       }
     }
 
@@ -358,6 +368,27 @@ Item {
     interval: 250
     repeat: false
     onTriggered: root.startFingerprint()
+  }
+
+  Process {
+    id: armIntentProcess
+    command: [root.omarchyPath + "/bin/omarchy-session-guard", "--arm"]
+    onExited: function(exitCode, exitStatus) {
+      if (exitCode === 0 && exitStatus === 0) root.beginSecureLock()
+      else {
+        root.lockRequested = false
+        root.logEvent("lock-denied: could not preserve lock intent")
+      }
+    }
+  }
+
+  Process {
+    id: clearIntentProcess
+    command: [root.omarchyPath + "/bin/omarchy-session-guard", "--clear"]
+    onExited: function(exitCode, exitStatus) {
+      if (exitCode === 0 && exitStatus === 0) root.finishAuthenticatedUnlock()
+      else root.logEvent("unlock-denied: could not clear lock intent")
+    }
   }
 
   Process {
