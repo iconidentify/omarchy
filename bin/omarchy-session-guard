@@ -1,0 +1,17 @@
+#!/bin/bash -p
+
+# omarchy:summary=Preserve lock intent across compositor exits
+# omarchy:hidden=true
+
+# PAM launches this entry point as root; privileged Bash ignores BASH_ENV and
+# exported functions before any command runs.
+if [[ $- != *p* ]]; then
+  echo "omarchy-session-guard: privileged Bash startup is required" >&2
+  exit 1
+fi
+
+if (( EUID == 0 )); then
+  exec /usr/bin/python3 -I /usr/share/omarchy/shell/session-guard.py "$@"
+else
+  exec /usr/bin/python3 -I "$OMARCHY_PATH/shell/session-guard.py" "$@"
+fi
